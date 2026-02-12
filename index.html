@@ -1,0 +1,2022 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absensi Digital Siswa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.31/dist/jspdf.plugin.autotable.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bg: '#0a0f1a',
+                        surface: '#111827',
+                        card: '#1a2332',
+                        border: '#2d3a4f',
+                        accent: '#00d4aa',
+                        accentDark: '#00a888',
+                        muted: '#64748b',
+                        danger: '#ef4444',
+                        warning: '#f59e0b',
+                        success: '#10b981',
+                        info: '#3b82f6'
+                    },
+                    fontFamily: {
+                        display: ['Space Grotesk', 'sans-serif'],
+                        body: ['DM Sans', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'DM Sans', sans-serif; background: #0a0f1a; }
+        h1, h2, h3, h4, h5, h6 { font-family: 'Space Grotesk', sans-serif; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #1a2332; }
+        ::-webkit-scrollbar-thumb { background: #2d3a4f; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3d4a5f; }
+        
+        /* Background Pattern */
+        .bg-pattern {
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(0, 212, 170, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(0, 168, 136, 0.05) 0%, transparent 50%),
+                linear-gradient(180deg, #0a0f1a 0%, #111827 100%);
+        }
+        
+        /* Glass Effect */
+        .glass {
+            background: rgba(26, 35, 50, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(45, 58, 79, 0.5);
+        }
+        
+        /* Sidebar Animation */
+        .sidebar-item {
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .sidebar-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 0;
+            background: #00d4aa;
+            border-radius: 0 3px 3px 0;
+            transition: height 0.3s ease;
+        }
+        .sidebar-item:hover::before,
+        .sidebar-item.active::before {
+            height: 60%;
+        }
+        .sidebar-item.active {
+            background: rgba(0, 212, 170, 0.1);
+            color: #00d4aa;
+        }
+        
+        /* Card Hover Effect */
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Button Styles */
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4aa 0%, #00a888 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            box-shadow: 0 8px 24px rgba(0, 212, 170, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        /* Input Focus */
+        .input-field:focus {
+            border-color: #00d4aa;
+            box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.15);
+        }
+        
+        /* Table Row Hover */
+        .table-row:hover {
+            background: rgba(0, 212, 170, 0.05);
+        }
+        
+        /* Modal Animation */
+        .modal-overlay {
+            animation: fadeIn 0.2s ease;
+        }
+        .modal-content {
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Stagger Animation */
+        .stagger-item {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: staggerIn 0.5s ease forwards;
+        }
+        
+        @keyframes staggerIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Stat Card Glow */
+        .stat-glow {
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-glow::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(0, 212, 170, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        
+        /* Barcode Scanner */
+        #scanner-container video {
+            border-radius: 12px;
+        }
+        
+        /* Toast */
+        .toast {
+            animation: toastIn 0.3s ease;
+        }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(100%); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        /* Responsive Sidebar */
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; }
+        }
+        
+        /* Reduced Motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-pattern text-white">
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+    
+    <!-- Mobile Menu Button -->
+    <button id="mobile-menu-btn" class="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-card border border-border hover:border-accent transition-colors">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+    </button>
+    
+    <!-- Sidebar Overlay -->
+    <div id="sidebar-overlay" class="lg:hidden fixed inset-0 bg-black/50 z-40 hidden"></div>
+    
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar fixed left-0 top-0 h-full w-64 bg-surface border-r border-border z-40 flex flex-col">
+        <div class="p-6 border-b border-border">
+            <h1 class="text-xl font-bold font-display text-accent">AbsensiKu</h1>
+            <p class="text-sm text-muted mt-1">Sistem Absensi Digital</p>
+        </div>
+        
+        <nav class="flex-1 p-4 space-y-1">
+            <a href="#beranda" class="sidebar-item active flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+                <span>Beranda</span>
+            </a>
+            <a href="#kelas" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+                <span>Kelas</span>
+            </a>
+            <a href="#siswa" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+                <span>Siswa</span>
+            </a>
+            <a href="#absensi" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+                <span>Absensi</span>
+            </a>
+            <a href="#laporan" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span>Laporan</span>
+            </a>
+        </nav>
+        
+        <div class="p-4 border-t border-border">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-accentDark flex items-center justify-center font-bold">
+                    A
+                </div>
+                <div>
+                    <p class="text-sm font-medium">Admin</p>
+                    <p class="text-xs text-muted">Administrator</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="lg:ml-64 min-h-screen">
+        <!-- Header -->
+        <header class="sticky top-0 z-30 glass border-b border-border">
+            <div class="px-4 lg:px-8 py-4 flex items-center justify-between">
+                <div class="lg:block hidden">
+                    <h2 id="page-title" class="text-lg font-semibold font-display">Beranda</h2>
+                </div>
+                <div class="lg:hidden w-8"></div>
+                <div class="flex items-center gap-4">
+                    <span id="current-date" class="text-sm text-muted"></span>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Content Container -->
+        <div id="content" class="p-4 lg:p-8">
+            <!-- Content will be loaded here -->
+        </div>
+    </main>
+    
+    <!-- Modal Container -->
+    <div id="modal-container"></div>
+
+    <script>
+        // =====================
+        // DATA STORE
+        // =====================
+        const Store = {
+            get(key, defaultValue = null) {
+                const data = localStorage.getItem(key);
+                return data ? JSON.parse(data) : defaultValue;
+            },
+            set(key, value) {
+                localStorage.setItem(key, JSON.stringify(value));
+            },
+            init() {
+                if (!this.get('kelas')) {
+                    this.set('kelas', [
+                        { id: 1, nama: 'XII IPA 1' },
+                        { id: 2, nama: 'XII IPA 2' },
+                        { id: 3, nama: 'XII IPS 1' },
+                        { id: 4, nama: 'XII IPS 2' }
+                    ]);
+                }
+                if (!this.get('siswa')) {
+                    this.set('siswa', [
+                        { id: 1, nis: '12345', nisn: '987654321', nama: 'Ahmad Fauzi', kelasId: 1, jenisKelamin: 'L' },
+                        { id: 2, nis: '12346', nisn: '987654322', nama: 'Siti Aisyah', kelasId: 1, jenisKelamin: 'P' },
+                        { id: 3, nis: '12347', nisn: '987654323', nama: 'Budi Santoso', kelasId: 2, jenisKelamin: 'L' },
+                        { id: 4, nis: '12348', nisn: '987654324', nama: 'Dewi Lestari', kelasId: 2, jenisKelamin: 'P' },
+                        { id: 5, nis: '12349', nisn: '987654325', nama: 'Eko Prasetyo', kelasId: 3, jenisKelamin: 'L' }
+                    ]);
+                }
+                if (!this.get('absensi')) {
+                    this.set('absensi', []);
+                }
+            }
+        };
+        
+        // Initialize store
+        Store.init();
+        
+        // =====================
+        // UTILITY FUNCTIONS
+        // =====================
+        const Utils = {
+            formatDate(date) {
+                return new Date(date).toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            },
+            formatDateShort(date) {
+                return new Date(date).toLocaleDateString('id-ID');
+            },
+            generateId() {
+                return Date.now() + Math.random().toString(36).substr(2, 9);
+            },
+            getKelasNama(kelasId) {
+                const kelas = Store.get('kelas', []).find(k => k.id === kelasId);
+                return kelas ? kelas.nama : '-';
+            }
+        };
+        
+        // =====================
+        // TOAST NOTIFICATION
+        // =====================
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-info';
+            
+            toast.className = `toast ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 max-w-sm`;
+            toast.innerHTML = `
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    ${type === 'success' ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>' : 
+                      type === 'error' ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>' :
+                      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'}
+                </svg>
+                <span class="text-sm">${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // =====================
+        // MODAL FUNCTIONS
+        // =====================
+        function showModal(content, size = 'md') {
+            const container = document.getElementById('modal-container');
+            const sizeClass = size === 'lg' ? 'max-w-2xl' : size === 'xl' ? 'max-w-4xl' : 'max-w-md';
+            
+            container.innerHTML = `
+                <div class="modal-overlay fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onclick="closeModal(event)">
+                    <div class="modal-content ${sizeClass} w-full bg-card rounded-xl border border-border shadow-2xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+                        ${content}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function closeModal(e) {
+            if (e && e.target !== e.currentTarget) return;
+            const container = document.getElementById('modal-container');
+            container.innerHTML = '';
+        }
+        
+        // =====================
+        // ROUTER
+        // =====================
+        const Router = {
+            routes: {},
+            register(route, handler) {
+                this.routes[route] = handler;
+            },
+            navigate(route) {
+                const handler = this.routes[route] || this.routes['beranda'];
+                if (handler) {
+                    handler();
+                    this.updateSidebar(route);
+                    window.location.hash = route;
+                }
+            },
+            updateSidebar(route) {
+                document.querySelectorAll('.sidebar-item').forEach(item => {
+                    item.classList.remove('active');
+                    if (item.getAttribute('href') === '#' + route) {
+                        item.classList.add('active');
+                    }
+                });
+                
+                const titles = {
+                    beranda: 'Beranda',
+                    kelas: 'Data Kelas',
+                    siswa: 'Data Siswa',
+                    absensi: 'Absensi',
+                    laporan: 'Laporan'
+                };
+                document.getElementById('page-title').textContent = titles[route] || 'Beranda';
+            },
+            init() {
+                window.addEventListener('hashchange', () => {
+                    const route = window.location.hash.slice(1) || 'beranda';
+                    this.navigate(route);
+                });
+                
+                document.querySelectorAll('.sidebar-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const route = item.getAttribute('href').slice(1);
+                        this.navigate(route);
+                        // Close mobile sidebar
+                        document.getElementById('sidebar').classList.remove('open');
+                        document.getElementById('sidebar-overlay').classList.add('hidden');
+                    });
+                });
+                
+                // Initial route
+                const route = window.location.hash.slice(1) || 'beranda';
+                this.navigate(route);
+            }
+        };
+        
+        // =====================
+        // BERANDA PAGE
+        // =====================
+        function renderBeranda() {
+            const kelas = Store.get('kelas', []);
+            const siswa = Store.get('siswa', []);
+            const absensi = Store.get('absensi', []);
+            
+            const today = new Date().toISOString().split('T')[0];
+            const absensiHariIni = absensi.filter(a => a.tanggal === today);
+            const hadirHariIni = absensiHariIni.filter(a => a.status === 'Hadir').length;
+            
+            // Calculate stats for chart
+            const statusCounts = { 'Hadir': 0, 'Sakit': 0, 'Alpha': 0, 'Bolos': 0, 'Izin': 0 };
+            absensi.forEach(a => {
+                if (statusCounts.hasOwnProperty(a.status)) {
+                    statusCounts[a.status]++;
+                }
+            });
+            
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="space-y-6">
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="stat-glow bg-card rounded-xl border border-border p-6 card-hover stagger-item" style="animation-delay: 0.1s">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-muted text-sm">Total Kelas</p>
+                                    <p class="text-3xl font-bold mt-1 font-display">${kelas.length}</p>
+                                </div>
+                                <div class="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-glow bg-card rounded-xl border border-border p-6 card-hover stagger-item" style="animation-delay: 0.2s">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-muted text-sm">Total Siswa</p>
+                                    <p class="text-3xl font-bold mt-1 font-display">${siswa.length}</p>
+                                </div>
+                                <div class="w-12 h-12 rounded-lg bg-info/10 flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-glow bg-card rounded-xl border border-border p-6 card-hover stagger-item" style="animation-delay: 0.3s">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-muted text-sm">Hadir Hari Ini</p>
+                                    <p class="text-3xl font-bold mt-1 font-display">${hadirHariIni}</p>
+                                </div>
+                                <div class="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-glow bg-card rounded-xl border border-border p-6 card-hover stagger-item" style="animation-delay: 0.4s">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-muted text-sm">Total Absensi</p>
+                                    <p class="text-3xl font-bold mt-1 font-display">${absensi.length}</p>
+                                </div>
+                                <div class="w-12 h-12 rounded-lg bg-warning/10 flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Charts -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-card rounded-xl border border-border p-6 stagger-item" style="animation-delay: 0.5s">
+                            <h3 class="font-semibold mb-4 font-display">Statistik Kehadiran</h3>
+                            <div class="h-64">
+                                <canvas id="chartKehadiran"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-card rounded-xl border border-border p-6 stagger-item" style="animation-delay: 0.6s">
+                            <h3 class="font-semibold mb-4 font-display">Siswa per Kelas</h3>
+                            <div class="h-64">
+                                <canvas id="chartKelas"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Activity -->
+                    <div class="bg-card rounded-xl border border-border p-6 stagger-item" style="animation-delay: 0.7s">
+                        <h3 class="font-semibold mb-4 font-display">Aktivitas Absensi Terbaru</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="border-b border-border">
+                                        <th class="text-left py-3 px-4 text-muted font-medium">Tanggal</th>
+                                        <th class="text-left py-3 px-4 text-muted font-medium">Siswa</th>
+                                        <th class="text-left py-3 px-4 text-muted font-medium">Kelas</th>
+                                        <th class="text-left py-3 px-4 text-muted font-medium">Jam</th>
+                                        <th class="text-left py-3 px-4 text-muted font-medium">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${absensi.slice(-10).reverse().map(a => {
+                                        const siswaData = siswa.find(s => s.id === a.siswaId);
+                                        return `
+                                            <tr class="table-row border-b border-border/50">
+                                                <td class="py-3 px-4">${Utils.formatDateShort(a.tanggal)}</td>
+                                                <td class="py-3 px-4">${siswaData ? siswaData.nama : '-'}</td>
+                                                <td class="py-3 px-4">${siswaData ? Utils.getKelasNama(siswaData.kelasId) : '-'}</td>
+                                                <td class="py-3 px-4">Jam ${a.jamPelajaran}</td>
+                                                <td class="py-3 px-4">
+                                                    <span class="px-2 py-1 rounded-full text-xs ${
+                                                        a.status === 'Hadir' ? 'bg-success/20 text-success' :
+                                                        a.status === 'Sakit' ? 'bg-warning/20 text-warning' :
+                                                        a.status === 'Alpha' ? 'bg-danger/20 text-danger' :
+                                                        a.status === 'Bolos' ? 'bg-danger/20 text-danger' :
+                                                        'bg-info/20 text-info'
+                                                    }">${a.status}</span>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('') || '<tr><td colspan="5" class="py-8 text-center text-muted">Belum ada data absensi</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Initialize charts
+            setTimeout(() => {
+                // Kehadiran Chart
+                const ctxKehadiran = document.getElementById('chartKehadiran');
+                if (ctxKehadiran) {
+                    new Chart(ctxKehadiran, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Hadir', 'Sakit', 'Alpha', 'Bolos', 'Izin'],
+                            datasets: [{
+                                data: [statusCounts['Hadir'], statusCounts['Sakit'], statusCounts['Alpha'], statusCounts['Bolos'], statusCounts['Izin']],
+                                backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#dc2626', '#3b82f6'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: { color: '#94a3b8', padding: 20 }
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                // Kelas Chart
+                const ctxKelas = document.getElementById('chartKelas');
+                if (ctxKelas) {
+                    const kelasData = kelas.map(k => ({
+                        nama: k.nama,
+                        jumlah: siswa.filter(s => s.kelasId === k.id).length
+                    }));
+                    
+                    new Chart(ctxKelas, {
+                        type: 'bar',
+                        data: {
+                            labels: kelasData.map(k => k.nama),
+                            datasets: [{
+                                label: 'Jumlah Siswa',
+                                data: kelasData.map(k => k.jumlah),
+                                backgroundColor: '#00d4aa',
+                                borderRadius: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: { color: '#94a3b8' },
+                                    grid: { color: '#2d3a4f' }
+                                },
+                                x: {
+                                    ticks: { color: '#94a3b8' },
+                                    grid: { display: false }
+                                }
+                            }
+                        }
+                    });
+                }
+            }, 100);
+        }
+        
+        // =====================
+        // KELAS PAGE
+        // =====================
+        function renderKelas() {
+            const kelas = Store.get('kelas', []);
+            const content = document.getElementById('content');
+            
+            content.innerHTML = `
+                <div class="space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <h2 class="text-2xl font-bold font-display">Data Kelas</h2>
+                        <button onclick="showModalKelas()" class="btn-primary px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Tambah Kelas
+                        </button>
+                    </div>
+                    
+                    <div class="bg-card rounded-xl border border-border overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-surface">
+                                    <tr>
+                                        <th class="text-left py-4 px-6 text-muted font-medium">No</th>
+                                        <th class="text-left py-4 px-6 text-muted font-medium">Nama Kelas</th>
+                                        <th class="text-left py-4 px-6 text-muted font-medium">Jumlah Siswa</th>
+                                        <th class="text-right py-4 px-6 text-muted font-medium">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${kelas.map((k, i) => {
+                                        const jumlahSiswa = Store.get('siswa', []).filter(s => s.kelasId === k.id).length;
+                                        return `
+                                            <tr class="table-row border-b border-border/50">
+                                                <td class="py-4 px-6">${i + 1}</td>
+                                                <td class="py-4 px-6 font-medium">${k.nama}</td>
+                                                <td class="py-4 px-6">${jumlahSiswa} siswa</td>
+                                                <td class="py-4 px-6">
+                                                    <div class="flex items-center justify-end gap-2">
+                                                        <button onclick="showModalKelas(${k.id})" class="p-2 rounded-lg hover:bg-accent/10 text-accent transition-colors" title="Edit">
+                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                            </svg>
+                                                        </button>
+                                                        <button onclick="deleteKelas(${k.id})" class="p-2 rounded-lg hover:bg-danger/10 text-danger transition-colors" title="Hapus">
+                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('') || '<tr><td colspan="4" class="py-8 text-center text-muted">Belum ada data kelas</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function showModalKelas(id = null) {
+            const kelas = id ? Store.get('kelas', []).find(k => k.id === id) : null;
+            
+            showModal(`
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold font-display mb-6">${kelas ? 'Edit Kelas' : 'Tambah Kelas Baru'}</h3>
+                    <form onsubmit="saveKelas(event, ${id})">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-muted mb-2">Nama Kelas</label>
+                                <input type="text" id="nama-kelas" value="${kelas ? kelas.nama : ''}" required
+                                    class="input-field w-full bg-surface border border-border rounded-lg px-4 py-3 text-white focus:outline-none">
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-3 mt-6">
+                            <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-lg border border-border hover:border-accent transition-colors">
+                                Batal
+                            </button>
+                            <button type="submit" class="btn-primary px-4 py-2 rounded-lg font-medium">
+                                Simpan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `);
+        }
+        
+        function saveKelas(e, id) {
+            e.preventDefault();
+            const nama = document.getElementById('nama-kelas').value;
+            let kelas = Store.get('kelas', []);
+            
+            if (id) {
+                kelas = kelas.map(k => k.id === id ? { ...k, nama } : k);
+                showToast('Kelas berhasil diperbarui');
+            } else {
+                kelas.push({ id: Date.now(), nama });
+                showToast('Kelas berhasil ditambahkan');
+            }
+            
+            Store.set('kelas', kelas);
+            closeModal();
+            renderKelas();
+        }
+        
+        function deleteKelas(id) {
+            if (!confirm('Apakah Anda yakin ingin menghapus kelas ini?')) return;
+            
+            let kelas = Store.get('kelas', []).filter(k => k.id !== id);
+            Store.set('kelas', kelas);
+            showToast('Kelas berhasil dihapus');
+            renderKelas();
+        }
+        
+        // =====================
+        // SISWA PAGE
+        // =====================
+        function renderSiswa() {
+            const siswa = Store.get('siswa', []);
+            const kelas = Store.get('kelas', []);
+            const content = document.getElementById('content');
+            
+            content.innerHTML = `
+                <div class="space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <h2 class="text-2xl font-bold font-display">Data Siswa</h2>
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="downloadTemplate()" class="px-4 py-2 rounded-lg border border-border hover:border-accent transition-colors flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                </svg>
+                                Template
+                            </button>
+                            <button onclick="showModalImport()" class="px-4 py-2 rounded-lg border border-border hover:border-accent transition-colors flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                                </svg>
+                                Import Excel
+                            </button>
+                            <button onclick="exportBarcodePDF()" class="px-4 py-2 rounded-lg border border-border hover:border-accent transition-colors flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                                </svg>
+                                Export Barcode
+                            </button>
+                            <button onclick="showModalSiswa()" class="btn-primary px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Tambah Siswa
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Filter -->
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <div class="flex-1">
+                            <input type="text" id="search-siswa" placeholder="Cari siswa..." oninput="filterSiswa()"
+                                class="input-field w-full bg-card border border-border rounded-lg px-4 py-3 text-white focus:outline-none">
+                        </div>
+                        <div class="sm:w-48">
+                            <select id="filter-kelas" onchange="filterSiswa()"
+                                class="input-field w-full bg-card border border-border rounded-lg px-4 py-3 text-white focus:outline-none">
+                                <option value="">Semua Kelas</option>
+                                ${kelas.map(k => `<option value="${k.id}">${k.nama}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-card rounded-xl border border-border overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-surface">
+                                    <tr>
+                                        <th class="text-left py-4 px-4 text-muted font-medium">No</th>
+                                        <th class="text-left py-4 px-4 text-muted font-medium">NIS</th>
+                                        <th class="text-left py-4 px-4 text-muted font-medium">NISN</th>
+                                        <th class="text-left py-4 px-4 text-muted font-medium">Nama Siswa</th>
+                                        <th class="text-left py-4 px-4 text-muted font-medium">Kelas</th>
+                                        <th class="text-left py-4 px-4 text-muted font-medium">JK</th>
+                                        <th class="text-right py-4 px-4 text-muted font-medium">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="siswa-table-body">
+                                    ${renderSiswaRows(siswa)}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderSiswaRows(siswa) {
+            return siswa.map((s, i) => `
+                <tr class="table-row border-b border-border/50">
+                    <td class="py-4 px-4">${i + 1}</td>
+                    <td class="py-4 px-4">${s.nis}</td>
+                    <td class="py-4 px-4">${s.nisn}</td>
+                    <td class="py-4 px-4 font-medium">${s.nama}</td>
+                    <td class="py-4 px-4">${Utils.getKelasNama(s.kelasId)}</td>
+                    <td class="py-4 px-4">${s.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan'}</td>
+                    <td class="py-4 px-4">
+                        <div class="flex items-center justify-end gap-2">
+                            <button onclick="showBarcode(${s.id})" class="p-2 rounded-lg hover:bg-info/10 text-info transition-colors" title="Barcode">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h2M4 12h2m14 0h2M6 12h2m0 8H6m6-12h2m4 0h2"/>
+                                </svg>
+                            </button>
+                            <button onclick="showModalSiswa(${s.id})" class="p-2 rounded-lg hover:bg-accent/10 text-accent transition-colors" title="Edit">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                            </button>
+                            <button onclick="deleteSiswa(${s.id})" class="p-2 rounded-lg hover:bg-danger/10 text-danger transition-colors" title="Hapus">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="7" class="py-8 text-center text-muted">Belum ada data siswa</td></tr>';
+        }
+        
+        function filterSiswa() {
+            const search = document.getElementById('search-siswa').value.toLowerCase();
+            const kelasId = document.getElementById('filter-kelas').value;
+            
+            let siswa = Store.get('siswa', []);
+            
+            if (search) {
+                siswa = siswa.filter(s => 
+                    s.nama.toLowerCase().includes(search) || 
+                    s.nis.includes(search) || 
+                    s.nisn.includes(search)
+                );
+            }
+            
+            if (kelasId) {
+                siswa = siswa.filter(s => s.kelasId === parseInt(kelasId));
+            }
+            
+            document.getElementById('siswa-table-body').innerHTML = renderSiswaRows(siswa);
+        }
+        
+        function showModalSiswa(id = null) {
+            const siswa = id ? Store.get('siswa', []).find(s => s.id === id) : null;
+            const kelas = Store.get('kelas', []);
+            
+            showModal(`
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold font-display mb-6">${siswa ? 'Edit Siswa' : 'Tambah Siswa Baru'}</h3>
+                    <form onsubmit="saveSiswa(event, ${id})">
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm text-muted mb-2">NIS</label>
+                                    <input type="text" id="siswa-nis" value="${siswa ? siswa.nis : ''}" required
+                                        class="input-field w-full bg-surface border border-border rounded-lg px-4 py-3 text-white focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-muted mb-2">NISN</label>
+                                    <input type="text" id="siswa-nisn" value="${siswa ? siswa.nisn : ''}" required
+                                        class="input-field w-full bg-surface border border-border rounded-lg px-4 py-3 text-white focus:outline-none">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-muted mb-2">Nama Siswa</label>
+                                <input type="text" id="siswa-nama" value="${siswa ? siswa.nama : ''}" required
+                                    class="input-field w-full bg-surface border border-border rounded-lg px-4 py-3 text-white focus:outline-none">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm text-muted mb-2">Kelas</label>
+                                    <select id="siswa-kelas" required
+                                        class="input-field w-full bg-surface border border-border rounded-lg px-4 py-3 text-white focus:outline-none">
+                                        <option value="">Pilih Kelas</option>
+                                        ${kelas.map(k => `<option value="${k.id}" ${siswa && siswa.kelasId === k.id ? 'selected' : ''}>${k.nama}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-muted mb-2">Jenis Kelamin</label>
+                                    <select id="siswa-jk" required
+                                        class="input-field w-full bg-surface border border-border rounded-lg px-4 py-3 text-white focus:outline-none">
+                                        <option value="">Pilih</option>
+                                        <option value="L" ${siswa && siswa.jenisKelamin === 'L' ? 'selected' : ''}>Laki-laki</option>
+                                        <option value="P" ${siswa && siswa.jenisKelamin === 'P' ? 'selected' : ''}>Perempuan</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-3 mt-6">
+                            <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-lg border border-border hover:border-accent transition-colors">
+                                Batal
+                            </button>
+                            <button type="submit" class="btn-primary px-4 py-2 rounded-lg font-medium">
+                                Simpan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `);
+        }
+        
+        function saveSiswa(e, id) {
+            e.preventDefault();
+            const nis = document.getElementById('siswa-nis').value;
+            const nisn = document.getElementById('siswa-nisn').value;
+            const nama = document.getElementById('siswa-nama').value;
+            const kelasId = parseInt(document.getElementById('siswa-kelas').value);
+            const jenisKelamin = document.getElementById('siswa-jk').value;
+            
+            let siswa = Store.get('siswa', []);
+            
+            if (id) {
+                siswa = siswa.map(s => s.id === id ? { ...s, nis, nisn, nama, kelasId, jenisKelamin } : s);
+                showToast('Siswa berhasil diperbarui');
+            } else {
+                siswa.push({ id: Date.now(), nis, nisn, nama, kelasId, jenisKelamin });
+                showToast('Siswa berhasil ditambahkan');
+            }
+            
+            Store.set('siswa', siswa);
+            closeModal();
+            renderSiswa();
+        }
+        
+        function deleteSiswa(id) {
+            if (!confirm('Apakah Anda yakin ingin menghapus siswa ini?')) return;
+            
+            let siswa = Store.get('siswa', []).filter(s => s.id !== id);
+            Store.set('siswa', siswa);
+            showToast('Siswa berhasil dihapus');
+            renderSiswa();
+        }
+        
+        function showBarcode(id) {
+            const siswa = Store.get('siswa', []).find(s => s.id === id);
+            if (!siswa) return;
+            
+            showModal(`
+                <div class="p-6 text-center">
+                    <h3 class="text-lg font-semibold font-display mb-4">Barcode Siswa</h3>
+                    <div class="bg-white p-6 rounded-lg inline-block">
+                        <svg id="barcode-display"></svg>
+                    </div>
+                    <p class="mt-4 font-medium">${siswa.nama}</p>
+                    <p class="text-sm text-muted">NIS: ${siswa.nis}</p>
+                </div>
+            `);
+            
+            setTimeout(() => {
+                JsBarcode("#barcode-display", siswa.nis, {
+                    format: "CODE128",
+                    width: 2,
+                    height: 80,
+                    displayValue: true
+                });
+            }, 100);
+        }
+        
+        // Import Excel Functions
+        function downloadTemplate() {
+            const template = [
+                ['NIS', 'NISN', 'Nama Siswa', 'Kelas', 'Jenis Kelamin (L/P)'],
+                ['12345', '987654321', 'Contoh Nama', 'XII IPA 1', 'L']
+            ];
+            
+            const ws = XLSX.utils.aoa_to_sheet(template);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Template Siswa');
+            XLSX.writeFile(wb, 'template_siswa.xlsx');
+            showToast('Template berhasil diunduh');
+        }
+        
+        function showModalImport() {
+            const kelas = Store.get('kelas', []);
+            
+            showModal(`
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold font-display mb-6">Import Data Siswa dari Excel</h3>
+                    <div class="space-y-4">
+                        <div class="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                            <input type="file" id="import-file" accept=".xlsx,.xls,.csv" onchange="previewImport()" class="hidden">
+                            <label for="import-file" class="cursor-pointer">
+                                <svg class="w-12 h-12 mx-auto text-muted mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                </svg>
+                                <p class="text-muted">Klik untuk memilih file Excel/CSV</p>
+                                <p class="text-sm text-muted mt-2">atau drag & drop file di sini</p>
+                            </label>
+                        </div>
+                        
+                        <div id="preview-container" class="hidden">
+                            <h4 class="font-medium mb-2">Preview Data:</h4>
+                            <div class="max-h-64 overflow-auto bg-surface rounded-lg p-4">
+                                <table class="w-full text-sm" id="preview-table"></table>
+                            </div>
+                            <p id="preview-count" class="text-sm text-muted mt-2"></p>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm text-muted mb-2">Mapping Kelas</label>
+                            <div id="kelas-mapping" class="space-y-2 max-h-32 overflow-auto"></div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-lg border border-border hover:border-accent transition-colors">
+                            Batal
+                        </button>
+                        <button onclick="executeImport()" id="btn-import" disabled class="btn-primary px-4 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                            Import Data
+                        </button>
+                    </div>
+                </div>
+            `, 'lg');
+        }
+        
+        let importData = [];
+        
+        function previewImport() {
+            const file = document.getElementById('import-file').files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                
+                if (json.length < 2) {
+                    showToast('File tidak memiliki data', 'error');
+                    return;
+                }
+                
+                // Skip header row
+                importData = json.slice(1).filter(row => row.length >= 5).map(row => ({
+                    nis: String(row[0] || ''),
+                    nisn: String(row[1] || ''),
+                    nama: String(row[2] || ''),
+                    kelasNama: String(row[3] || ''),
+                    jenisKelamin: String(row[4] || 'L').toUpperCase()
+                }));
+                
+                // Show preview
+                const previewContainer = document.getElementById('preview-container');
+                const previewTable = document.getElementById('preview-table');
+                const previewCount = document.getElementById('preview-count');
+                
+                previewTable.innerHTML = `
+                    <thead>
+                        <tr class="border-b border-border">
+                            <th class="py-2 px-3 text-left text-muted">NIS</th>
+                            <th class="py-2 px-3 text-left text-muted">NISN</th>
+                            <th class="py-2 px-3 text-left text-muted">Nama</th>
+                            <th class="py-2 px-3 text-left text-muted">Kelas</th>
+                            <th class="py-2 px-3 text-left text-muted">JK</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${importData.slice(0, 10).map(d => `
+                            <tr class="border-b border-border/50">
+                                <td class="py-2 px-3">${d.nis}</td>
+                                <td class="py-2 px-3">${d.nisn}</td>
+                                <td class="py-2 px-3">${d.nama}</td>
+                                <td class="py-2 px-3">${d.kelasNama}</td>
+                                <td class="py-2 px-3">${d.jenisKelamin}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                `;
+                
+                previewCount.textContent = `Menampilkan ${Math.min(10, importData.length)} dari ${importData.length} data`;
+                previewContainer.classList.remove('hidden');
+                
+                // Generate kelas mapping
+                const kelas = Store.get('kelas', []);
+                const uniqueKelas = [...new Set(importData.map(d => d.kelasNama))];
+                const mappingContainer = document.getElementById('kelas-mapping');
+                
+                mappingContainer.innerHTML = uniqueKelas.map(kelasNama => `
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm w-32 truncate">${kelasNama}</span>
+                        <span class="text-muted">→</span>
+                        <select class="kelas-map flex-1 bg-card border border-border rounded px-2 py-1 text-sm" data-original="${kelasNama}">
+                            <option value="">Pilih Kelas</option>
+                            ${kelas.map(k => `<option value="${k.id}" ${k.nama.toLowerCase() === kelasNama.toLowerCase() ? 'selected' : ''}>${k.nama}</option>`).join('')}
+                        </select>
+                    </div>
+                `).join('');
+                
+                document.getElementById('btn-import').disabled = false;
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        
+        function executeImport() {
+            const kelasMaps = document.querySelectorAll('.kelas-map');
+            const mapping = {};
+            kelasMaps.forEach(map => {
+                mapping[map.dataset.original] = parseInt(map.value);
+            });
+            
+            // Validate
+            const unmapped = Object.entries(mapping).filter(([k, v]) => !v);
+            if (unmapped.length > 0) {
+                showToast('Mohon mapping semua kelas', 'error');
+                return;
+            }
+            
+            let siswa = Store.get('siswa', []);
+            let added = 0;
+            
+            importData.forEach(d => {
+                const kelasId = mapping[d.kelasNama];
+                if (kelasId && d.nis && d.nama) {
+                    // Check if NIS already exists
+                    if (!siswa.find(s => s.nis === d.nis)) {
+                        siswa.push({
+                            id: Date.now() + Math.random(),
+                            nis: d.nis,
+                            nisn: d.nisn,
+                            nama: d.nama,
+                            kelasId: kelasId,
+                            jenisKelamin: d.jenisKelamin === 'P' ? 'P' : 'L'
+                        });
+                        added++;
+                    }
+                }
+            });
+            
+            Store.set('siswa', siswa);
+            showToast(`${added} siswa berhasil diimport`);
+            closeModal();
+            renderSiswa();
+        }
+        
+        // Export Barcode to PDF
+        function exportBarcodePDF() {
+            const siswa = Store.get('siswa', []);
+            if (siswa.length === 0) {
+                showToast('Tidak ada data siswa', 'error');
+                return;
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const cardWidth = 60;
+            const cardHeight = 35;
+            const margin = 10;
+            const cardsPerRow = 3;
+            
+            let x = margin;
+            let y = margin;
+            
+            siswa.forEach((s, i) => {
+                // Create barcode on canvas
+                const canvas = document.createElement('canvas');
+                JsBarcode(canvas, s.nis, {
+                    format: "CODE128",
+                    width: 1.5,
+                    height: 30,
+                    displayValue: true,
+                    fontSize: 8
+                });
+                
+                // Add card background
+                doc.setDrawColor(200);
+                doc.setFillColor(255, 255, 255);
+                doc.roundedRect(x, y, cardWidth, cardHeight, 2, 2, 'FD');
+                
+                // Add barcode image
+                const imgData = canvas.toDataURL('image/png');
+                doc.addImage(imgData, 'PNG', x + 5, y + 5, cardWidth - 10, 15);
+                
+                // Add student name
+                doc.setFontSize(8);
+                doc.setTextColor(0, 0, 0);
+                doc.text(s.nama, x + cardWidth / 2, y + cardHeight - 5, { align: 'center' });
+                
+                // Move to next position
+                x += cardWidth + 5;
+                if ((i + 1) % cardsPerRow === 0) {
+                    x = margin;
+                    y += cardHeight + 5;
+                }
+                
+                // New page if needed
+                if (y + cardHeight > doc.internal.pageSize.getHeight() - margin) {
+                    doc.addPage();
+                    x = margin;
+                    y = margin;
+                }
+            });
+            
+            doc.save('barcode_siswa.pdf');
+            showToast('Barcode berhasil diexport ke PDF');
+        }
+        
+        // =====================
+        // ABSENSI PAGE
+        // =====================
+        let scanner = null;
+        
+        function renderAbsensi() {
+            const kelas = Store.get('kelas', []);
+            const today = new Date().toISOString().split('T')[0];
+            const content = document.getElementById('content');
+            
+            content.innerHTML = `
+                <div class="space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <h2 class="text-2xl font-bold font-display">Absensi Siswa</h2>
+                        <button onclick="showScannerModal()" class="btn-primary px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h2M4 12h2m14 0h2M6 12h2m0 8H6m6-12h2m4 0h2"/>
+                            </svg>
+                            Scan Barcode
+                        </button>
+                    </div>
+                    
+                    <!-- Filter -->
+                    <div class="bg-card rounded-xl border border-border p-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm text-muted mb-2">Pilih Kelas</label>
+                                <select id="absensi-kelas" onchange="loadAbsensiSiswa()"
+                                    class="input-field w-full bg-surface border border-border rounded-lg px-4 py-3 text-white focus:outline-none">
+                                    <option value="">Pilih Kelas</option>
+                                    ${kelas.map(k => `<option value="${k.id}">${k.nama}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-muted mb-2">Tanggal</label>
+                                <input type="date" id="absensi-tanggal" value="${today}" onchange="loadAbsensiSiswa()"
+                                    class="input-field w-full bg-surface border border-border rounded-lg px-4 py-3 text-white focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-muted mb-2">Jam Pelajaran</label>
+                                <select id="absensi-jam"
+                                    class="input-field w-full bg-surface border border-border rounded-lg px-4 py-3 text-white focus:outline-none">
+                                    ${[1,2,3,4,5,6,7,8].map(j => `<option value="${j}">Jam ${j}</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Siswa List -->
+                    <div id="absensi-siswa-container" class="bg-card rounded-xl border border-border overflow-hidden">
+                        <div class="p-6 text-center text-muted">
+                            Pilih kelas untuk menampilkan daftar siswa
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function loadAbsensiSiswa() {
+            const kelasId = parseInt(document.getElementById('absensi-kelas').value);
+            const tanggal = document.getElementById('absensi-tanggal').value;
+            const jam = parseInt(document.getElementById('absensi-jam').value);
+            
+            if (!kelasId) {
+                document.getElementById('absensi-siswa-container').innerHTML = `
+                    <div class="p-6 text-center text-muted">Pilih kelas untuk menampilkan daftar siswa</div>
+                `;
+                return;
+            }
+            
+            const siswa = Store.get('siswa', []).filter(s => s.kelasId === kelasId);
+            const absensi = Store.get('absensi', []);
+            
+            const container = document.getElementById('absensi-siswa-container');
+            container.innerHTML = `
+                <div class="p-4 border-b border-border flex justify-between items-center">
+                    <h3 class="font-semibold">Daftar Siswa - ${Utils.getKelasNama(kelasId)}</h3>
+                    <button onclick="saveAbsensiAll(${kelasId}, '${tanggal}', ${jam})" class="btn-primary px-4 py-2 rounded-lg text-sm font-medium">
+                        Simpan Absensi
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-surface">
+                            <tr>
+                                <th class="text-left py-4 px-4 text-muted font-medium">No</th>
+                                <th class="text-left py-4 px-4 text-muted font-medium">NIS</th>
+                                <th class="text-left py-4 px-4 text-muted font-medium">Nama Siswa</th>
+                                <th class="text-left py-4 px-4 text-muted font-medium">Status</th>
+                                <th class="text-left py-4 px-4 text-muted font-medium">Keterangan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${siswa.map((s, i) => {
+                                const existing = absensi.find(a => 
+                                    a.siswaId === s.id && 
+                                    a.tanggal === tanggal && 
+                                    a.jamPelajaran === jam
+                                );
+                                
+                                return `
+                                    <tr class="table-row border-b border-border/50">
+                                        <td class="py-4 px-4">${i + 1}</td>
+                                        <td class="py-4 px-4">${s.nis}</td>
+                                        <td class="py-4 px-4 font-medium">${s.nama}</td>
+                                        <td class="py-4 px-4">
+                                            <select id="status-${s.id}" onchange="toggleKeterangan(${s.id})"
+                                                class="input-field bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
+                                                <option value="">Pilih</option>
+                                                <option value="Hadir" ${existing && existing.status === 'Hadir' ? 'selected' : ''}>Hadir</option>
+                                                <option value="Sakit" ${existing && existing.status === 'Sakit' ? 'selected' : ''}>Sakit</option>
+                                                <option value="Alpha" ${existing && existing.status === 'Alpha' ? 'selected' : ''}>Alpha</option>
+                                                <option value="Bolos" ${existing && existing.status === 'Bolos' ? 'selected' : ''}>Bolos</option>
+                                                <option value="Izin" ${existing && existing.status === 'Izin' ? 'selected' : ''}>Izin</option>
+                                            </select>
+                                        </td>
+                                        <td class="py-4 px-4">
+                                            <input type="text" id="ket-${s.id}" placeholder="Keterangan izin..."
+                                                value="${existing && existing.keterangan ? existing.keterangan : ''}"
+                                                class="input-field w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none ${existing && existing.status === 'Izin' ? '' : 'hidden'}">
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+        
+        function toggleKeterangan(siswaId) {
+            const status = document.getElementById(`status-${siswaId}`).value;
+            const ketInput = document.getElementById(`ket-${siswaId}`);
+            
+            if (status === 'Izin') {
+                ketInput.classList.remove('hidden');
+            } else {
+                ketInput.classList.add('hidden');
+            }
+        }
+        
+        function saveAbsensiAll(kelasId, tanggal, jam) {
+            const siswa = Store.get('siswa', []).filter(s => s.kelasId === kelasId);
+            let absensi = Store.get('absensi', []);
+            let saved = 0;
+            
+            siswa.forEach(s => {
+                const status = document.getElementById(`status-${s.id}`).value;
+                if (!status) return;
+                
+                const keterangan = document.getElementById(`ket-${s.id}`).value;
+                
+                // Remove existing entry for this student/date/jam
+                absensi = absensi.filter(a => 
+                    !(a.siswaId === s.id && a.tanggal === tanggal && a.jamPelajaran === jam)
+                );
+                
+                // Add new entry
+                absensi.push({
+                    id: Date.now() + Math.random(),
+                    siswaId: s.id,
+                    kelasId: kelasId,
+                    tanggal: tanggal,
+                    jamPelajaran: jam,
+                    status: status,
+                    keterangan: status === 'Izin' ? keterangan : '',
+                    timestamp: new Date().toISOString()
+                });
+                
+                saved++;
+            });
+            
+            Store.set('absensi', absensi);
+            showToast(`${saved} data absensi berhasil disimpan`);
+            loadAbsensiSiswa();
+        }
+        
+        function showScannerModal() {
+            showModal(`
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold font-display mb-4">Scan Barcode Siswa</h3>
+                    <div class="mb-4">
+                        <label class="block text-sm text-muted mb-2">Jam Pelajaran</label>
+                        <select id="scan-jam"
+                            class="input-field w-full bg-surface border border-border rounded-lg px-4 py-3 text-white focus:outline-none">
+                            ${[1,2,3,4,5,6,7,8].map(j => `<option value="${j}">Jam ${j}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div id="scanner-container" class="bg-surface rounded-lg overflow-hidden mb-4">
+                        <div id="reader" class="w-full"></div>
+                    </div>
+                    <div class="flex justify-center gap-4">
+                        <button onclick="startScanner()" id="btn-start-scan" class="btn-primary px-4 py-2 rounded-lg font-medium">
+                            Mulai Scan
+                        </button>
+                        <button onclick="stopScanner()" id="btn-stop-scan" class="hidden px-4 py-2 rounded-lg border border-danger text-danger hover:bg-danger/10 transition-colors">
+                            Stop Scan
+                        </button>
+                    </div>
+                    <div id="scan-result" class="mt-4 hidden">
+                        <div class="bg-success/10 border border-success/30 rounded-lg p-4 text-center">
+                            <svg class="w-12 h-12 mx-auto text-success mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <p id="scan-result-text" class="font-medium text-success"></p>
+                        </div>
+                    </div>
+                </div>
+            `, 'lg');
+        }
+        
+        function startScanner() {
+            const html5QrCode = new Html5Qrcode("reader");
+            
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                onScanSuccess,
+                onScanFailure
+            ).then(() => {
+                scanner = html5QrCode;
+                document.getElementById('btn-start-scan').classList.add('hidden');
+                document.getElementById('btn-stop-scan').classList.remove('hidden');
+            }).catch(err => {
+                showToast('Tidak dapat mengakses kamera', 'error');
+                console.error(err);
+            });
+        }
+        
+        function stopScanner() {
+            if (scanner) {
+                scanner.stop().then(() => {
+                    scanner = null;
+                    document.getElementById('btn-start-scan').classList.remove('hidden');
+                    document.getElementById('btn-stop-scan').classList.add('hidden');
+                });
+            }
+        }
+        
+        function onScanSuccess(decodedText) {
+            const siswa = Store.get('siswa', []).find(s => s.nis === decodedText);
+            
+            if (siswa) {
+                const jam = parseInt(document.getElementById('scan-jam').value);
+                const tanggal = new Date().toISOString().split('T')[0];
+                let absensi = Store.get('absensi', []);
+                
+                // Check if already recorded
+                const existing = absensi.find(a => 
+                    a.siswaId === siswa.id && 
+                    a.tanggal === tanggal && 
+                    a.jamPelajaran === jam
+                );
+                
+                if (existing) {
+                    document.getElementById('scan-result-text').textContent = 
+                        `${siswa.nama} sudah tercatat ${existing.status} pada jam ${jam}`;
+                } else {
+                    absensi.push({
+                        id: Date.now(),
+                        siswaId: siswa.id,
+                        kelasId: siswa.kelasId,
+                        tanggal: tanggal,
+                        jamPelajaran: jam,
+                        status: 'Hadir',
+                        keterangan: '',
+                        timestamp: new Date().toISOString()
+                    });
+                    Store.set('absensi', absensi);
+                    document.getElementById('scan-result-text').textContent = 
+                        `${siswa.nama} berhasil dicatat HADIR pada jam ${jam}`;
+                }
+                
+                document.getElementById('scan-result').classList.remove('hidden');
+                
+                // Play success sound
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2JkIqFe3Vwa2lscHyBh4mKioqJiYaFhIWCgYGBgoOEhYaHiImKi4yMjIuKiYmHhoWEg4KBgYGBgoKDhIWGh4iJiouMjIyLiomJh4aFhIOCgYGBgYKCg4SFhoeIiYqLjIyMjIuKiYmHhoWEg4KBgYGBgoKDhIWGh4iJiouMjIyLiomJh4aFhIOCgYGBgYKCg4SFhoeIiYqLjIyMjIuKiYmHhoWEg4KBgYGBgoKDhIWGh4iJiouMjIyLiomJh4aFhIOCgQ==');
+                audio.play().catch(() => {});
+            } else {
+                showToast('Siswa tidak ditemukan', 'error');
+            }
+        }
+        
+        function onScanFailure(error) {
+            // Ignore scan failures
+        }
+        
+        // =====================
+        // LAPORAN PAGE
+        // =====================
+        function renderLaporan() {
+            const kelas = Store.get('kelas', []);
+            const content = document.getElementById('content');
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            
+            content.innerHTML = `
+                <div class="space-y-6">
+                    <h2 class="text-2xl font-bold font-display">Laporan Absensi</h2>
+                    
+                    <!-- Tabs -->
+                    <div class="flex border-b border-border">
+                        <button onclick="switchTab('harian')" id="tab-harian" class="px-6 py-3 font-medium border-b-2 border-accent text-accent">
+                            Laporan Harian
+                        </button>
+                        <button onclick="switchTab('bulanan')" id="tab-bulanan" class="px-6 py-3 font-medium border-b-2 border-transparent text-muted hover:text-white">
+                            Laporan Bulanan
+                        </button>
+                    </div>
+                    
+                    <!-- Filter Harian -->
+                    <div id="filter-harian" class="bg-card rounded-xl border border-border p-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm text-muted mb-2">Tanggal</label>
+                                <input type="date" id="laporan-tanggal" value="${today.toISOString().split('T')[0]}" onchange="loadLaporanHarian()"
+                                    class="input-field w-full bg-surface border border-border rounded-lg px-4 py-3 text-white focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-muted mb-2">Kelas</label>
+                                <select id="laporan-kelas-harian" onchange="loadLaporanHarian()"
+                                    class="input-field w-full bg-surface border border-border rounded-lg px-4 py-3 text-white focus:outline-none">
+                                    <option value="">Semua Kelas</option>
+                                    ${kelas.map(k => `<option value="${k.id}">${k.nama}</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Filter Bulanan -->
+                    <div id="filter-bulanan" class="bg-card rounded-xl border border-border p-6 hidden">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm text-muted mb-2">Bulan</label>
+                                <input type="month" id="laporan-bulan" value="${today.toISOString().slice(0, 7)}" onchange="loadLaporanBulanan()"
+                                    class="input-field w-full bg-surface border border-border rounded-lg px-4 py-3 text-white focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-muted mb-2">Kelas</label>
+                                <select id="laporan-kelas-bulanan" onchange="loadLaporanBulanan()"
+                                    class="input-field w-full bg-surface border border-border rounded-lg px-4 py-3 text-white focus:outline-none">
+                                    <option value="">Semua Kelas</option>
+                                    ${kelas.map(k => `<option value="${k.id}">${k.nama}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div class="flex items-end">
+                                <button onclick="loadLaporanBulanan()" class="btn-primary px-4 py-3 rounded-lg font-medium w-full">
+                                    Tampilkan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Laporan Container -->
+                    <div id="laporan-container" class="bg-card rounded-xl border border-border overflow-hidden">
+                        <div class="p-6 text-center text-muted">
+                            Pilih filter untuk menampilkan laporan
+                        </div>
+                    </div>
+                    
+                    <!-- Export Buttons -->
+                    <div id="export-buttons" class="hidden flex flex-wrap gap-3">
+                        <button onclick="printLaporan()" class="px-4 py-2 rounded-lg border border-border hover:border-accent transition-colors flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                            </svg>
+                            Cetak
+                        </button>
+                        <button onclick="exportExcel()" class="px-4 py-2 rounded-lg border border-border hover:border-accent transition-colors flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Export Excel
+                        </button>
+                        <button onclick="exportPDF()" class="px-4 py-2 rounded-lg border border-border hover:border-accent transition-colors flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                            </svg>
+                            Export PDF
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        let currentLaporan = 'harian';
+        let laporanData = [];
+        
+        function switchTab(tab) {
+            currentLaporan = tab;
+            
+            document.getElementById('tab-harian').classList.toggle('border-accent', tab === 'harian');
+            document.getElementById('tab-harian').classList.toggle('text-accent', tab === 'harian');
+            document.getElementById('tab-harian').classList.toggle('border-transparent', tab !== 'harian');
+            document.getElementById('tab-harian').classList.toggle('text-muted', tab !== 'harian');
+            
+            document.getElementById('tab-bulanan').classList.toggle('border-accent', tab === 'bulanan');
+            document.getElementById('tab-bulanan').classList.toggle('text-accent', tab === 'bulanan');
+            document.getElementById('tab-bulanan').classList.toggle('border-transparent', tab !== 'bulanan');
+            document.getElementById('tab-bulanan').classList.toggle('text-muted', tab !== 'bulanan');
+            
+            document.getElementById('filter-harian').classList.toggle('hidden', tab !== 'harian');
+            document.getElementById('filter-bulanan').classList.toggle('hidden', tab !== 'bulanan');
+            document.getElementById('export-buttons').classList.add('hidden');
+            
+            if (tab === 'harian') {
+                loadLaporanHarian();
+            } else {
+                loadLaporanBulanan();
+            }
+        }
+        
+        function loadLaporanHarian() {
+            const tanggal = document.getElementById('laporan-tanggal').value;
+            const kelasId = document.getElementById('laporan-kelas-harian').value;
+            
+            const absensi = Store.get('absensi', []);
+            const siswa = Store.get('siswa', []);
+            
+            let filtered = absensi.filter(a => a.tanggal === tanggal);
+            
+            if (kelasId) {
+                filtered = filtered.filter(a => a.kelasId === parseInt(kelasId));
+            }
+            
+            laporanData = filtered.map(a => {
+                const s = siswa.find(x => x.id === a.siswaId);
+                return {
+                    ...a,
+                    namaSiswa: s ? s.nama : '-',
+                    nis: s ? s.nis : '-',
+                    kelasNama: Utils.getKelasNama(a.kelasId)
+                };
+            });
+            
+            const container = document.getElementById('laporan-container');
+            
+            if (laporanData.length === 0) {
+                container.innerHTML = `<div class="p-6 text-center text-muted">Tidak ada data absensi pada tanggal tersebut</div>`;
+                document.getElementById('export-buttons').classList.add('hidden');
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="p-4 border-b border-border flex justify-between items-center no-print">
+                    <h3 class="font-semibold">Laporan Absensi - ${Utils.formatDateShort(tanggal)}</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full" id="laporan-table">
+                        <thead class="bg-surface">
+                            <tr>
+                                <th class="text-left py-4 px-4 text-muted font-medium">No</th>
+                                <th class="text-left py-4 px-4 text-muted font-medium">NIS</th>
+                                <th class="text-left py-4 px-4 text-muted font-medium">Nama Siswa</th>
+                                <th class="text-left py-4 px-4 text-muted font-medium">Kelas</th>
+                                <th class="text-left py-4 px-4 text-muted font-medium">Jam</th>
+                                <th class="text-left py-4 px-4 text-muted font-medium">Status</th>
+                                <th class="text-left py-4 px-4 text-muted font-medium">Keterangan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${laporanData.map((l, i) => `
+                                <tr class="table-row border-b border-border/50">
+                                    <td class="py-4 px-4">${i + 1}</td>
+                                    <td class="py-4 px-4">${l.nis}</td>
+                                    <td class="py-4 px-4 font-medium">${l.namaSiswa}</td>
+                                    <td class="py-4 px-4">${l.kelasNama}</td>
+                                    <td class="py-4 px-4">Jam ${l.jamPelajaran}</td>
+                                    <td class="py-4 px-4">
+                                        <span class="px-2 py-1 rounded-full text-xs ${
+                                            l.status === 'Hadir' ? 'bg-success/20 text-success' :
+                                            l.status === 'Sakit' ? 'bg-warning/20 text-warning' :
+                                            l.status === 'Alpha' ? 'bg-danger/20 text-danger' :
+                                            l.status === 'Bolos' ? 'bg-danger/20 text-danger' :
+                                            'bg-info/20 text-info'
+                                        }">${l.status}</span>
+                                    </td>
+                                    <td class="py-4 px-4">${l.keterangan || '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            document.getElementById('export-buttons').classList.remove('hidden');
+        }
+        
+        function loadLaporanBulanan() {
+            const bulan = document.getElementById('laporan-bulan').value;
+            const kelasId = document.getElementById('laporan-kelas-bulanan').value;
+            
+            if (!bulan) {
+                showToast('Pilih bulan terlebih dahulu', 'error');
+                return;
+            }
+            
+            const [year, month] = bulan.split('-').map(Number);
+            const absensi = Store.get('absensi', []);
+            const siswa = Store.get('siswa', []);
+            
+            // Filter siswa by kelas
+            let filteredSiswa = siswa;
+            if (kelasId) {
+                filteredSiswa = siswa.filter(s => s.kelasId === parseInt(kelasId));
+            }
+            
+            // Build monthly report
+            laporanData = filteredSiswa.map(s => {
+                const studentAbsensi = absensi.filter(a => {
+                    const date = new Date(a.tanggal);
+                    return a.siswaId === s.id && 
+                           date.getFullYear() === year && 
+                           date.getMonth() === month - 1;
+                });
+                
+                const jamKehadiran = {};
+                for (let j = 1; j <= 8; j++) {
+                    const jamData = studentAbsensi.find(a => a.jamPelajaran === j);
+                    jamKehadiran[`jam_${j}`] = jamData ? jamData.status : '-';
+                }
+                
+                const counts = {
+                    hadir: studentAbsensi.filter(a => a.status === 'Hadir').length,
+                    sakit: studentAbsensi.filter(a => a.status === 'Sakit').length,
+                    alpha: studentAbsensi.filter(a => a.status === 'Alpha').length,
+                    bolos: studentAbsensi.filter(a => a.status === 'Bolos').length,
+                    izin: studentAbsensi.filter(a => a.status === 'Izin').length
+                };
+                
+                return {
+                    nis: s.nis,
+                    namaSiswa: s.nama,
+                    kelasNama: Utils.getKelasNama(s.kelasId),
+                    ...jamKehadiran,
+                    ...counts
+                };
+            });
+            
+            const container = document.getElementById('laporan-container');
+            
+            if (laporanData.length === 0) {
+                container.innerHTML = `<div class="p-6 text-center text-muted">Tidak ada data siswa</div>`;
+                document.getElementById('export-buttons').classList.add('hidden');
+                return;
+            }
+            
+            const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                               'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            
+            container.innerHTML = `
+                <div class="p-4 border-b border-border no-print">
+                    <h3 class="font-semibold">Laporan Bulanan - ${monthNames[month - 1]} ${year}</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm" id="laporan-table">
+                        <thead class="bg-surface">
+                            <tr>
+                                <th class="text-left py-3 px-3 text-muted font-medium" rowspan="2">No</th>
+                                <th class="text-left py-3 px-3 text-muted font-medium" rowspan="2">NIS</th>
+                                <th class="text-left py-3 px-3 text-muted font-medium" rowspan="2">Nama Siswa</th>
+                                <th class="text-left py-3 px-3 text-muted font-medium" rowspan="2">Kelas</th>
+                                <th class="text-center py-2 px-2 text-muted font-medium border-b border-border" colspan="8">Jam Pelajaran</th>
+                                <th class="text-center py-2 px-2 text-muted font-medium border-b border-border" colspan="5">Rekapitulasi</th>
+                            </tr>
+                            <tr>
+                                ${[1,2,3,4,5,6,7,8].map(j => `<th class="text-center py-2 px-2 text-muted font-medium text-xs">J${j}</th>`).join('')}
+                                <th class="text-center py-2 px-2 text-success font-medium text-xs">H</th>
+                                <th class="text-center py-2 px-2 text-warning font-medium text-xs">S</th>
+                                <th class="text-center py-2 px-2 text-danger font-medium text-xs">A</th>
+                                <th class="text-center py-2 px-2 text-danger font-medium text-xs">B</th>
+                                <th class="text-center py-2 px-2 text-info font-medium text-xs">I</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${laporanData.map((l, i) => `
+                                <tr class="table-row border-b border-border/50">
+                                    <td class="py-3 px-3">${i + 1}</td>
+                                    <td class="py-3 px-3">${l.nis}</td>
+                                    <td class="py-3 px-3 font-medium">${l.namaSiswa}</td>
+                                    <td class="py-3 px-3">${l.kelasNama}</td>
+                                    ${[1,2,3,4,5,6,7,8].map(j => {
+                                        const status = l[`jam_${j}`];
+                                        const bgColor = status === 'Hadir' ? 'bg-success/20 text-success' :
+                                                       status === 'Sakit' ? 'bg-warning/20 text-warning' :
+                                                       status === 'Alpha' ? 'bg-danger/20 text-danger' :
+                                                       status === 'Bolos' ? 'bg-danger/20 text-danger' :
+                                                       status === 'Izin' ? 'bg-info/20 text-info' : '';
+                                        return `<td class="py-2 px-1 text-center"><span class="inline-block w-6 h-6 rounded text-xs leading-6 ${bgColor}">${status === '-' ? '-' : status[0]}</span></td>`;
+                                    }).join('')}
+                                    <td class="py-3 px-2 text-center font-medium text-success">${l.hadir}</td>
+                                    <td class="py-3 px-2 text-center font-medium text-warning">${l.sakit}</td>
+                                    <td class="py-3 px-2 text-center font-medium text-danger">${l.alpha}</td>
+                                    <td class="py-3 px-2 text-center font-medium text-danger">${l.bolos}</td>
+                                    <td class="py-3 px-2 text-center font-medium text-info">${l.izin}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            document.getElementById('export-buttons').classList.remove('hidden');
+        }
+        
+        function printLaporan() {
+            window.print();
+        }
+        
+        function exportExcel() {
+            if (laporanData.length === 0) {
+                showToast('Tidak ada data untuk diexport', 'error');
+                return;
+            }
+            
+            let ws;
+            if (currentLaporan === 'harian') {
+                const exportData = laporanData.map((l, i) => ({
+                    'No': i + 1,
+                    'NIS': l.nis,
+                    'Nama Siswa': l.namaSiswa,
+                    'Kelas': l.kelasNama,
+                    'Jam Pelajaran': `Jam ${l.jamPelajaran}`,
+                    'Status': l.status,
+                    'Keterangan': l.keterangan || '-'
+                }));
+                ws = XLSX.utils.json_to_sheet(exportData);
+            } else {
+                const exportData = laporanData.map((l, i) => ({
+                    'No': i + 1,
+                    'NIS': l.nis,
+                    'Nama Siswa': l.namaSiswa,
+                    'Kelas': l.kelasNama,
+                    'Jam 1': l.jam_1,
+                    'Jam 2': l.jam_2,
+                    'Jam 3': l.jam_3,
+                    'Jam 4': l.jam_4,
+                    'Jam 5': l.jam_5,
+                    'Jam 6': l.jam_6,
+                    'Jam 7': l.jam_7,
+                    'Jam 8': l.jam_8,
+                    'Hadir': l.hadir,
+                    'Sakit': l.sakit,
+                    'Alpha': l.alpha,
+                    'Bolos': l.bolos,
+                    'Izin': l.izin
+                }));
+                ws = XLSX.utils.json_to_sheet(exportData);
+            }
+            
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Laporan Absensi');
+            XLSX.writeFile(wb, `laporan_absensi_${currentLaporan}.xlsx`);
+            showToast('File Excel berhasil diunduh');
+        }
+        
+        function exportPDF() {
+            if (laporanData.length === 0) {
+                showToast('Tidak ada data untuk diexport', 'error');
+                return;
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: currentLaporan === 'bulanan' ? 'landscape' : 'portrait' });
+            
+            doc.setFontSize(16);
+            doc.text('Laporan Absensi Siswa', 14, 15);
+            doc.setFontSize(10);
+            doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, 14, 22);
+            
+            if (currentLaporan === 'harian') {
+                const tableData = laporanData.map((l, i) => [
+                    i + 1,
+                    l.nis,
+                    l.namaSiswa,
+                    l.kelasNama,
+                    `Jam ${l.jamPelajaran}`,
+                    l.status,
+                    l.keterangan || '-'
+                ]);
+                
+                doc.autoTable({
+                    head: [['No', 'NIS', 'Nama Siswa', 'Kelas', 'Jam', 'Status', 'Keterangan']],
+                    body: tableData,
+                    startY: 28,
+                    styles: { fontSize: 8 }
+                });
+            } else {
+                const tableData = laporanData.map((l, i) => [
+                    i + 1,
+                    l.nis,
+                    l.namaSiswa,
+                    l.kelasNama,
+                    l.jam_1, l.jam_2, l.jam_3, l.jam_4, l.jam_5, l.jam_6, l.jam_7, l.jam_8,
+                    l.hadir, l.sakit, l.alpha, l.bolos, l.izin
+                ]);
+                
+                doc.autoTable({
+                    head: [['No', 'NIS', 'Nama', 'Kelas', 'J1', 'J2', 'J3', 'J4', 'J5', 'J6', 'J7', 'J8', 'H', 'S', 'A', 'B', 'I']],
+                    body: tableData,
+                    startY: 28,
+                    styles: { fontSize: 6 }
+                });
+            }
+            
+            doc.save(`laporan_absensi_${currentLaporan}.pdf`);
+            showToast('File PDF berhasil diunduh');
+        }
+        
+        // =====================
+        // INITIALIZATION
+        // =====================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update current date
+            document.getElementById('current-date').textContent = Utils.formatDate(new Date());
+            
+            // Mobile menu toggle
+            document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('open');
+                document.getElementById('sidebar-overlay').classList.toggle('hidden');
+            });
+            
+            document.getElementById('sidebar-overlay').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.remove('open');
+                this.classList.add('hidden');
+            });
+            
+            // Register routes
+            Router.register('beranda', renderBeranda);
+            Router.register('kelas', renderKelas);
+            Router.register('siswa', renderSiswa);
+            Router.register('absensi', renderAbsensi);
+            Router.register('laporan', renderLaporan);
+            
+            // Initialize router
+            Router.init();
+        });
+    </script>
+</body>
+</html>
